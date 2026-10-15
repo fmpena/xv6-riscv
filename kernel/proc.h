@@ -90,6 +90,7 @@ struct proc {
   int pid;              // Process ID
   uint cputime;
   int priority;         //process priority
+  uint readytime;       //time the process became ready
 
   // wait_lock must be held when using this:
   struct proc *parent; // Parent process

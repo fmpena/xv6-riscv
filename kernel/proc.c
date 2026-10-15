@@ -7,6 +7,9 @@
 #include "defs.h"
 #include "pstat.h"
 
+extern uint ticks;
+extern struct spinlock tickslock;
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -127,6 +130,7 @@ found:
   p->state = USED;
   p->cputime = 0;
   p->priority = 0; //start new processes at priority 0
+  p->readytime = 0;  //initialize the ready time
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -228,6 +232,11 @@ userinit(void)
 
   p->cwd = namei("/");
 
+  //get the current time
+  acquire(&tickslock);
+  p->readytime = ticks;
+  release(&tickslock);
+
   p->state = RUNNABLE;
 
   release(&p->lock);
@@ -304,6 +313,12 @@ kfork(void)
   release(&wait_lock);
 
   acquire(&np->lock);
+  
+  //record when the child becomes runnable
+  acquire(&tickslock);
+  np->readytime = ticks;
+  release(&tickslock);
+  
   np->state = RUNNABLE;
   release(&np->lock);
 
@@ -575,6 +590,12 @@ yield(void)
 {
   struct proc *p = myproc();
   acquire(&p->lock);
+
+  //record when the process becomes runnable
+  acquire(&tickslock);
+  p->readytime = ticks;
+  release(&tickslock);
+
   p->state = RUNNABLE;
   sched();
   release(&p->lock);
@@ -661,6 +682,10 @@ wakeup(void *chan)
       // If this waiting process has gotten so far as to actually
       // go to sleep, also set it back to RUNNING.
       if (p->state == SLEEPING) {
+        //record when the process wakes up
+        acquire(&tickslock);
+        p->readytime = ticks;
+        release(&tickslock);
         p->state = RUNNABLE;
       }
     }
@@ -682,6 +707,10 @@ kkill(int pid)
       p->killed = 1;
       if (p->state == SLEEPING) {
         // Wake process from sleep().
+        //record when the process becomes runnable
+        acquire(&tickslock);
+        p->readytime = ticks;
+        release(&tickslock);
         p->state = RUNNABLE;
       }
       release(&p->lock);
@@ -798,8 +827,14 @@ getprocs(uint64 addr)
     info.size = p->sz;
     info.ppid = 0;
     info.priority = p->priority; //get the process priority
+    info.age = 0;
+    if(p->state == RUNNABLE){
+      //calculate how long the process has been waiting
+      acquire(&tickslock);
+      info.age = ticks - p->readytime;
+      release(&tickslock);
+    }
     safestrcpy(info.name, p->name, sizeof(info.name));
-
     release(&p->lock);
 
     //get the parent process id
