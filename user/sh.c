@@ -168,6 +168,21 @@ main(void)
       cmd[strlen(cmd) - 1] = 0; // chop \n
       if (chdir(cmd + 3) < 0)
         fprintf(2, "cannot cd %s\n", cmd + 3);
+    } else if (strcmp(cmd, "getpriority\n") == 0) {
+      //get the shell's priority
+      printf("shell priority: %d\n", getpriority());
+    } else if (cmd[0] == 's' && cmd[1] == 'e' &&
+               cmd[2] == 't' && cmd[3] == 'p' &&
+               cmd[4] == 'r' && cmd[5] == 'i' &&
+               cmd[6] == 'o' && cmd[7] == 'r' &&
+               cmd[8] == 'i' && cmd[9] == 't' &&
+               cmd[10] == 'y' && cmd[11] == ' ') {
+      //change the shell's priority
+      int priority = atoi(cmd + 12);
+      if (setpriority(priority) < 0)
+        printf("invalid priority\n");
+      else
+        printf("shell priority changed to %d\n", getpriority());
     } else {
       if (fork1() == 0)
         runcmd(parsecmd(cmd));
