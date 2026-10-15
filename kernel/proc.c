@@ -768,3 +768,54 @@ procdump(void)
     printk("\n");
   }
 }
+
+//get information about active processes
+int
+getprocs(uint64 addr)
+{
+  struct proc *p;
+  struct pstat info;
+  int count = 0;
+  struct proc *current = myproc();
+
+  //go through each process
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+
+    //skip unused processes
+    if(p->state == UNUSED){
+      release(&p->lock);
+      continue;
+    }
+
+    //get the process information
+    info.pid = p->pid;
+    info.state = p->state;
+    info.size = p->sz;
+    info.ppid = 0;
+    safestrcpy(info.name, p->name, sizeof(info.name));
+
+    release(&p->lock);
+
+    //get the parent process id
+    acquire(&wait_lock);
+
+    if(p->parent != 0){
+       info.ppid = p->parent->pid;
+    }
+
+    release(&wait_lock);
+    //copy the information to the user
+    if(copyout(current->pagetable, current->sz,
+               addr + count * sizeof(info),
+               (char *)&info, sizeof(info)) < 0){
+      return -1;
+    }
+
+    count++;
+  }
+
+  //return the number of processes
+  return count;
+}
+

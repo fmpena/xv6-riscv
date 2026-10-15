@@ -122,3 +122,17 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//get information about the processes
+uint64
+sys_getprocs(void)
+{
+  //store the address of the process array
+  uint64 addr;
+
+  //get the address passed by the user
+  argaddr(0, &addr);
+
+  //get the process information
+  return getprocs(addr);
+}
