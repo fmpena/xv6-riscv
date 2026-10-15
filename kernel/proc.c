@@ -525,21 +525,55 @@ scheduler(void)
     int found = 0;
 
 #if PRIORITY_SCHED
-    //find the runnable process with the highest priority
+    //find the runnable process with the highest effective priority
     struct proc *best = 0;
     int highest = -1;
+    uint now;
+
+    acquire(&tickslock);
+    now = ticks;
+    release(&tickslock);
+
     for(p = proc; p < &proc[NPROC]; p++){
       acquire(&p->lock);
-      if(p->state == RUNNABLE && p->priority > highest){
-        highest = p->priority;
-        best = p;
+      if(p->state == RUNNABLE){
+        //calculate how long the process has been waiting
+        uint age = now - p->readytime;
+        int effective = p->priority;
+
+        //increase priority based on waiting time
+        if(age >= 30){
+          effective += 15;
+        }
+        else if(age >= 10){
+          effective += 5;
+        }
+
+        //aging disabled for comparison
+//        if(age >= 30){
+  //        effective += 0;
+    //    }
+      //  else if(age >= 10){
+        //  effective += 0;
+       // }
+
+        //keep the effective priority within the limit
+        if(effective > 99){
+          effective = 99;
+        }
+
+        if(effective > highest){
+          highest = effective;
+          best = p;
+        }
       }
       release(&p->lock);
     }
+
     if(best != 0){
       acquire(&best->lock);
       if(best->state == RUNNABLE){
-        //run the process with the highest priority
+        //run the process with the highest effective priority
         best->state = RUNNING;
         c->proc = best;
         swtch(&c->context, &best->context);

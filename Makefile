@@ -161,6 +161,7 @@ UPROGS=\
 	$U/_testpriority\
 	$U/_testage\
 	$U/_testscheduler\
+	$U/_timingtest\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
