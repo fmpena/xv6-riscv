@@ -24,13 +24,16 @@ main(int argc, char **argv)
   if (nprocs < 0)
     exit(-1);
 
-  printf("pid\tstate\t\tsize\tppid\tname\n");
+  //print the column names
+  printf("pid\tstate\t\tsize\tppid\tpriority\tname\n");
+  
   for (i=0; i<nprocs; i++) {
     state = states[uproc[i].state];
     //print the process information
-  printf("%d\t%s\t%lu\t%d\t%s\n",
-         uproc[i].pid, state,
-         uproc[i].size, uproc[i].ppid,
+  //print the process information
+  printf("%d\t%s\t%lu\t%d\t%d\t\t%s\n",
+         uproc[i].pid, state, uproc[i].size,
+         uproc[i].ppid, uproc[i].priority,
          uproc[i].name);
   }
 

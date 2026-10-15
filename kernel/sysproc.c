@@ -129,10 +129,42 @@ sys_getprocs(void)
 {
   //store the address of the process array
   uint64 addr;
-
   //get the address passed by the user
   argaddr(0, &addr);
-
   //get the process information
   return getprocs(addr);
+}
+
+//get the current process priority
+uint64
+sys_getpriority(void)
+{
+  struct proc *p = myproc();
+  int priority;
+  //lock the process
+  acquire(&p->lock);
+  //get the priority
+  priority = p->priority;
+  release(&p->lock);
+  return priority;
+}
+
+//set the current process priority
+uint64
+sys_setpriority(void)
+{
+  struct proc *p = myproc();
+  int priority;
+  //get the new priority
+  argint(0, &priority);
+  //check if the priority is valid
+  if(priority < 0 || priority > 49){
+    return -1;
+  }
+  //lock the process
+  acquire(&p->lock);
+  //update the priority
+  p->priority = priority;
+  release(&p->lock);
+  return 0;
 }

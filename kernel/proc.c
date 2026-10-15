@@ -126,6 +126,7 @@ found:
   p->pid = allocpid();
   p->state = USED;
   p->cputime = 0;
+  p->priority = 0; //start new processes at priority 0
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -276,6 +277,9 @@ kfork(void)
     return -1;
   }
   np->sz = p->sz;
+
+  //give the child the same priority as the parent
+  np->priority = p->priority;
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
@@ -793,6 +797,7 @@ getprocs(uint64 addr)
     info.state = p->state;
     info.size = p->sz;
     info.ppid = 0;
+    info.priority = p->priority; //get the process priority
     safestrcpy(info.name, p->name, sizeof(info.name));
 
     release(&p->lock);
